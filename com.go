@@ -2,13 +2,10 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"net"
-	"os"
 )
 
-func recieveMessage(conn net.Conn) (string, error) {
-	connReader := bufio.NewReader(conn)
+func recieveMessage(connReader *bufio.Reader) (string, error) {
 	message, err := connReader.ReadBytes('\n')
 	return string(message), err
 }
@@ -16,7 +13,6 @@ func recieveMessage(conn net.Conn) (string, error) {
 func sendMessage(conn net.Conn, message string) {
 	_, err := conn.Write([]byte(message))
 	if err != nil {
-		fmt.Println("Error sending message: ", err.Error())
-		os.Exit(1)
+		errorMsg("Failed to send message: "+err.Error(), 1)
 	}
 }
