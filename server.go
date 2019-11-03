@@ -3,77 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"strings"
 )
-
-type clientManager struct {
-	serverUser *user
-	curUser    *user
-	allUsers   *[]*user
-	channels   *[]string
-}
-
-func (clientManager *clientManager) addCurUser() {
-	*clientManager.allUsers = append(*clientManager.allUsers, clientManager.curUser)
-	fmt.Println("User:", clientManager.curUser.username, "registerd")
-}
-
-func (clientManager *clientManager) getUser(username string) (*user, bool) {
-	for _, user := range *clientManager.allUsers {
-		if user.username == username {
-			return user, true
-		}
-	}
-	return clientManager.curUser, false
-}
-
-func (clientManager *clientManager) showCurrentChannel() {
-	curChannel := clientManager.curUser.channel
-	clientManager.curUser.sendMessageLn("Current channel: "+curChannel)
-}
-
-func (clientManager *clientManager) leaveChannel() {
-	clientManager.curUser.channel = "World"
-	clientManager.showCurrentChannel()
-}
-
-func (clientManager *clientManager) switchChannel(newChannel string) {
-	found := false
-	newChannel = strings.ToLower(newChannel)
-	for _, channel := range *clientManager.channels {
-		if newChannel == strings.ToLower(channel) {
-			found = true
-			break
-		}
-	}
-	if found == false {
-		*clientManager.channels = append(*clientManager.channels, newChannel)
-	}
-	clientManager.curUser.channel = newChannel
-	clientManager.showCurrentChannel()
-}
-
-func (clientManager *clientManager) listAllChannels() {
-	for _, channel := range *clientManager.channels {
-		clientManager.curUser.sendMessageLn(channel)
-	}
-}
-
-func (clientManager *clientManager) listActiveUsers() {
-	for _, user := range *clientManager.allUsers {
-		if user.status == active {
-			clientManager.curUser.sendMessageLn(user.nickname)
-		}
-	}
-}
-
-func (clientManager *clientManager) logoutCurUser() {
-	clientManager.curUser.status = inactive
-	clientManager.curUser.connReader = nil
-	clientManager.curUser.conn.Close()
-	clientManager.curUser.conn = nil
-	fmt.Println("User:", clientManager.curUser.username, "logged out")
-}
 
 func createListener() net.Listener {
 	listener, err := net.Listen(serverProtocol, serverAdress)
@@ -113,13 +43,6 @@ func createServer() {
 	serverLoop(clientManager, serverListener)
 }
 
-func welcomeNewUser(clientManager clientManager, newUser *user) {
-	clientManager.sendServerMessage(newUser, "Welcome,")
-	clientManager.sendServerMessage(newUser, "!init:  Initialize account or login")
-	clientManager.sendServerMessage(newUser, "!help:  See list of possible commands")
-	newUser.sendMessageLn("")
-}
-
 func serverLoop(clientManager clientManager, listener net.Listener) {
 	newUserChannel := make(chan *user)
 
@@ -127,7 +50,20 @@ func serverLoop(clientManager clientManager, listener net.Listener) {
 
 	for {
 		newUser := <-newUserChannel
-		welcomeNewUser(clientManager, newUser)
+		clientManager.welcomeUser(newUser)
 		go clientManager.handleUserRequest(newUser)
+	}
+}
+
+func handleNewUser(listener net.Listener, newUserChannel chan *user) {
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			errorMsg("Failed to accept connection: "+err.Error(), 1)
+		}
+
+		newUser := newUser(conn)
+		fmt.Println("Connection Established")
+		newUserChannel <- newUser
 	}
 }
