@@ -13,6 +13,7 @@ func handleClient() {
 	if err != nil {
 		errorMsg("Failed to establish connection to server: "+err.Error(), 1)
 	}
+
 	curUser := newUser(conn)
 	go handleReceive(curUser)
 	handleSend(curUser)
@@ -20,6 +21,7 @@ func handleClient() {
 
 func handleSend(curUser user) {
 	stdinReader := bufio.NewReader(os.Stdin)
+
 	for {
 		message, err := stdinReader.ReadString('\n')
 		if err != nil {
@@ -28,6 +30,7 @@ func handleSend(curUser user) {
 			}
 			os.Exit(1)
 		}
+
 		if len(strings.TrimSpace(message)) != 0 {
 			sendMessage(curUser.conn, message)
 		}
