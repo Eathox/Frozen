@@ -16,3 +16,7 @@ func sendMessage(conn net.Conn, message string) {
 		errorMsg("Failed to send message: "+err.Error(), 1)
 	}
 }
+
+func sendMessageLn(conn net.Conn, message string) {
+	sendMessageLn(conn, message)
+}

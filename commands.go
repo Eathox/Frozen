@@ -28,7 +28,7 @@ func handleCommand(curUser *user, message string) bool {
 func initUser(curUser *user, words []string) {
 	countWords := len(words)
 	if countWords < 3 {
-		sendMessage(curUser.conn, "usage: !init USERNAME PASSWORD (NICKNAME)\n")
+		sendMessageLn(curUser.conn, "usage: !init USERNAME PASSWORD (NICKNAME)")
 		return
 	}
 
@@ -48,11 +48,11 @@ func initUser(curUser *user, words []string) {
 		*curUser = *existingUser
 
 	case existingUser.password == words[2] && existingUser.status == active:
-		sendMessage(curUser.conn, "[SERVER] : Failed to init, User already active\n")
+		sendMessageLn(curUser.conn, "[SERVER] : Failed to init, User already active")
 		return
 
 	default:
-		sendMessage(curUser.conn, "[SERVER] : Failed to init, Username already in use\n")
+		sendMessageLn(curUser.conn, "[SERVER] : Failed to init, Username already in use")
 		return
 	}
 
@@ -60,5 +60,5 @@ func initUser(curUser *user, words []string) {
 	if countWords > 3 {
 		curUser.nickname = words[3]
 	}
-	sendMessage(curUser.conn, "[SERVER] : Welcome, "+curUser.nickname+"\n")
+	sendMessageLn(curUser.conn, "[SERVER] : Welcome, "+curUser.nickname)
 }

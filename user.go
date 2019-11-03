@@ -65,10 +65,10 @@ func handleNewUser(listener net.Listener, newUserChannel chan *user) {
 			errorMsg("Failed to accept connection: "+err.Error(), 1)
 		}
 		newUser := newUser(conn)
-		sendMessage(conn, "[SERVER] : Welcome,\n")
-		sendMessage(conn, "[SERVER] : !init:  Initialize account or login\n")
-		sendMessage(conn, "[SERVER] : !help:  See list of possible commands\n")
-		sendMessage(conn, "\n")
+		sendMessageLn(conn, "[SERVER] : Welcome,")
+		sendMessageLn(conn, "[SERVER] : !init:  Initialize account or login")
+		sendMessageLn(conn, "[SERVER] : !help:  See list of possible commands")
+		sendMessageLn(conn, "")
 		fmt.Println("Connection Established")
 		newUserChannel <- &newUser
 	}
@@ -102,8 +102,8 @@ func handleUserRequest(curUser *user, removedUserChannel chan *user) {
 		if handled != true {
 			switch (*curUser).status {
 			case inactive:
-				sendMessage((*curUser).conn, "Please initialize\n")
-				sendMessage((*curUser).conn, "!help\tif you feel lost\n")
+				sendMessageLn((*curUser).conn, "Please initialize")
+				sendMessageLn((*curUser).conn, "!help\tif you feel lost")
 
 			case active:
 				sendMessageAllUsers(curUser, message)
