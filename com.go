@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-func recieveMessage(connReader *bufio.Reader) (string, error) {
+func receiveMessage(connReader *bufio.Reader) (string, error) {
 	message, err := connReader.ReadBytes('\n')
 	return string(message), err
 }

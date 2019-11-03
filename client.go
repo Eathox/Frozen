@@ -11,13 +11,14 @@ import (
 func handleClient() {
 	conn, err := net.Dial(serverProtocol, serverAdress)
 	if err != nil {
-		errorMsg("Failed to establish connection to server: " + err.Error(), 1)
+		errorMsg("Failed to establish connection to server: "+err.Error(), 1)
 	}
-	go handleRecieve(conn)
-	handleSend(conn)
+	curUser := newUser(conn)
+	go handleReceive(curUser)
+	handleSend(curUser)
 }
 
-func handleSend(conn net.Conn) {
+func handleSend(curUser user) {
 	stdinReader := bufio.NewReader(os.Stdin)
 	for {
 		message, err := stdinReader.ReadString('\n')
@@ -28,17 +29,16 @@ func handleSend(conn net.Conn) {
 			os.Exit(1)
 		}
 		if len(strings.TrimSpace(message)) != 0 {
-			sendMessage(conn, message)
+			sendMessage(curUser.conn, message)
 		}
 	}
 }
 
-func handleRecieve(conn net.Conn) {
-	connReader := bufio.NewReader(conn)
+func handleReceive(curUser user) {
 	for {
-		message, err := recieveMessage(connReader)
+		message, err := receiveMessage(curUser.connReader)
 		if err != nil {
-			errorMsg("Failed to recieve from server: " + err.Error(), 1)
+			errorMsg("Failed to receive from server: "+err.Error(), 1)
 		}
 		fmt.Print(message)
 	}

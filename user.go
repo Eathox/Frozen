@@ -50,16 +50,21 @@ func getNewUser(listener net.Listener) {
 	}
 }
 
+func newUser(conn net.Conn) user {
+	newUser := user{
+		conn:       conn,
+		connReader: bufio.NewReader(conn),
+	}
+	return (newUser)
+}
+
 func handleNewUser(listener net.Listener, newUserChannel chan *user) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			errorMsg("Failed to accept connection: "+err.Error(), 1)
 		}
-		newUser := user{
-			conn:       conn,
-			connReader: bufio.NewReader(conn),
-		}
+		newUser := newUser(conn)
 		sendMessage(conn, "[SERVER] : Welcome,\n")
 		sendMessage(conn, "[SERVER] : !init:  Initialize account or login\n")
 		sendMessage(conn, "[SERVER] : !help:  See list of possible commands\n")
@@ -82,11 +87,11 @@ func handleRemoveUser(removedUser *user) {
 
 func handleUserRequest(curUser *user, removedUserChannel chan *user) {
 	for {
-		message, err := recieveMessage((*curUser).connReader)
+		message, err := receiveMessage((*curUser).connReader)
 		if err != nil {
 			switch {
 			case err.Error() != "EOF":
-				fmt.Println("Error recieving message:", err.Error())
+				fmt.Println("Error receiving message:", err.Error())
 
 			default:
 				removedUserChannel <- curUser
