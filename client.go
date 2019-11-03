@@ -32,16 +32,19 @@ func handleSend(curUser *user) {
 		}
 
 		if len(strings.TrimSpace(message)) != 0 {
-			sendMessage((*curUser).conn, message)
+			curUser.sendMessage(message)
 		}
 	}
 }
 
 func handleReceive(curUser *user) {
 	for {
-		message, err := receiveMessage((*curUser).connReader)
+		message, err := curUser.receiveMessage()
 		if err != nil {
-			errorMsg("Failed to receive from server: "+err.Error(), 1)
+			if err.Error() != "EOF" {
+				fmt.Println("Failed to receive from server:", err.Error())
+			}
+			os.Exit(1)
 		}
 		fmt.Print(message)
 	}

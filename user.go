@@ -20,21 +20,13 @@ type user struct {
 	username   string
 	password   string
 	status     userStatus
-	channel    uint8
-}
-
-func getUser(clientManager *clientManager, username string) (*user, bool) {
-	for _, user := range *clientManager.allUsers {
-		if user.username == username {
-			return user, true
-		}
-	}
-	return clientManager.curUser, false
+	channel    string
 }
 
 func newUser(conn net.Conn) *user {
 	newUser := new(user)
 	newUser.conn = conn
+	newUser.channel = "World"
 	if conn != nil {
 		newUser.connReader = bufio.NewReader(conn)
 	}
@@ -49,36 +41,23 @@ func handleNewUser(listener net.Listener, newUserChannel chan *user) {
 		}
 
 		newUser := newUser(conn)
-		sendMessageLn(conn, "[SERVER] : Welcome,")
-		sendMessageLn(conn, "[SERVER] : !init:  Initialize account or login")
-		sendMessageLn(conn, "[SERVER] : !help:  See list of possible commands")
-		sendMessageLn(conn, "")
 		fmt.Println("Connection Established")
 		newUserChannel <- newUser
 	}
 }
 
-func handleRemoveUser(clientManager clientManager, removedUser *user) {
-	for _, user := range *clientManager.allUsers {
-		if user.conn == removedUser.conn {
-			user.status = inactive
-			user.connReader = nil
-			user.conn.Close()
-			fmt.Println("Connection Terminated")
-		}
-	}
-}
+func (clientManager clientManager) handleUserRequest(curUser *user) {
+	clientManager.curUser = curUser
 
-func handleUserRequest(clientManager clientManager, removedUserChannel chan *user) {
 	for {
-		message, err := receiveMessage(clientManager.curUser.connReader)
+		message, err := clientManager.curUser.receiveMessage()
 		if err != nil {
 			switch {
 			case err.Error() != "EOF":
-				fmt.Println("Error receiving message:", err.Error())
+				errorMsg("Error receiving message: "+err.Error(), 1)
 
 			default:
-				removedUserChannel <- clientManager.curUser
+				clientManager.logoutCurUser()
 				return
 			}
 		}
@@ -86,11 +65,11 @@ func handleUserRequest(clientManager clientManager, removedUserChannel chan *use
 		if handled != true {
 			switch clientManager.curUser.status {
 			case inactive:
-				sendMessageLn(clientManager.curUser.conn, "Please initialize")
-				sendMessageLn(clientManager.curUser.conn, "!help\tif you feel lost")
+				clientManager.sendServerMessage(clientManager.curUser, "Please initialize")
+				clientManager.sendServerMessage(clientManager.curUser, "!help\tif you feel lost")
 
 			case active:
-				sendMessageAllUsers(&clientManager, message)
+				clientManager.sendMessageToAllUsers(message)
 			}
 		}
 		fmt.Print(message)
