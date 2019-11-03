@@ -18,5 +18,5 @@ func sendMessage(conn net.Conn, message string) {
 }
 
 func sendMessageLn(conn net.Conn, message string) {
-	sendMessageLn(conn, message)
+	sendMessage(conn, message+"\n")
 }
