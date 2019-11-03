@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	serverIP       = "10.11.3.2"
+	serverIP       = "10.11.3.1" //Fill in your ip here
 	serverPort     = "4242"
 	serverAdress   = serverIP + ":" + serverPort
 	serverProtocol = "tcp"
