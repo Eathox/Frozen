@@ -19,7 +19,7 @@ func handleClient() {
 	handleSend(curUser)
 }
 
-func handleSend(curUser user) {
+func handleSend(curUser *user) {
 	stdinReader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -32,14 +32,14 @@ func handleSend(curUser user) {
 		}
 
 		if len(strings.TrimSpace(message)) != 0 {
-			sendMessage(curUser.conn, message)
+			sendMessage((*curUser).conn, message)
 		}
 	}
 }
 
-func handleReceive(curUser user) {
+func handleReceive(curUser *user) {
 	for {
-		message, err := receiveMessage(curUser.connReader)
+		message, err := receiveMessage((*curUser).connReader)
 		if err != nil {
 			errorMsg("Failed to receive from server: "+err.Error(), 1)
 		}

@@ -1,8 +1,11 @@
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
-var commands = map[string]func(*user, []string){
+var commands = map[string]func(*clientManager, []string){
 	"!init": initUser,
 	// "!nickname": changeNickname,
 	// "!join":     joinChannel,
@@ -14,47 +17,48 @@ var commands = map[string]func(*user, []string){
 	// "!help":     printHelp,
 }
 
-func handleCommand(curUser *user, message string) bool {
+func handleCommand(clientManager *clientManager, message string) bool {
 	words := strings.Fields(message)
 	for key, function := range commands {
 		if key == strings.ToLower(words[0]) {
-			function(curUser, words)
+			function(clientManager, words)
 			return true
 		}
 	}
 	return false
 }
 
-func initUser(curUser *user, words []string) {
+func initUser(clientManager *clientManager, words []string) {
 	countWords := len(words)
 	if countWords < 3 {
-		sendMessageLn(curUser.conn, "usage: !init USERNAME PASSWORD (NICKNAME)")
+		sendMessageLn(clientManager.curUser.conn, "usage: !init USERNAME PASSWORD (NICKNAME)")
 		return
 	}
 
-	existingUser := getUser(words[1])
+	existingUser, userFound := getUser(clientManager, words[1])
 	switch {
-	case existingUser == nil:
-		curUser.username = words[1]
-		curUser.password = words[2]
+	case userFound == false:
+		clientManager.curUser.username = words[1]
+		clientManager.curUser.password = words[2]
 		if countWords == 3 {
-			curUser.nickname = curUser.username
+			clientManager.curUser.nickname = clientManager.curUser.username
 		}
-		allUsers = append(allUsers, curUser)
+		fmt.Printf("CurUser: %p\n", clientManager.curUser)
+		*clientManager.allUsers = append(*clientManager.allUsers, clientManager.curUser)
 
 	case existingUser.password == words[2] && existingUser.status == inactive:
-		existingUser.conn = curUser.conn
-		existingUser.connReader = curUser.connReader
-		*curUser = *existingUser
+		existingUser.conn = clientManager.curUser.conn
+		existingUser.connReader = clientManager.curUser.connReader
+		clientManager.curUser = existingUser
 
 	default:
-		sendMessageLn(curUser.conn, "[SERVER] : Failed to init, Username already in use")
+		sendMessageLn(clientManager.curUser.conn, "[SERVER] : Failed to init, Username already in use")
 		return
 	}
 
-	curUser.status = active
+	clientManager.curUser.status = active
 	if countWords > 3 {
-		curUser.nickname = words[3]
+		clientManager.curUser.nickname = words[3]
 	}
-	sendMessageLn(curUser.conn, "[SERVER] : Welcome, "+curUser.nickname)
+	sendMessageLn(clientManager.curUser.conn, "[SERVER] : Welcome, "+clientManager.curUser.nickname)
 }

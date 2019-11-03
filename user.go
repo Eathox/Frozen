@@ -23,39 +23,22 @@ type user struct {
 	channel    uint8
 }
 
-var allUsers = []*user{}
-
-func getUser(username string) *user {
-	for _, user := range allUsers {
+func getUser(clientManager *clientManager, username string) (*user, bool) {
+	for _, user := range *clientManager.allUsers {
 		if user.username == username {
-			return user
+			return user, true
 		}
 	}
-	return nil
+	return clientManager.curUser, false
 }
 
-func getNewUser(listener net.Listener) {
-	newUserChannel := make(chan *user)
-	removedUserChannel := make(chan *user)
-
-	go handleNewUser(listener, newUserChannel)
-
-	for {
-		select {
-		case newUser := <-newUserChannel:
-			go handleUserRequest(newUser, removedUserChannel)
-		case removedUser := <-removedUserChannel:
-			handleRemoveUser(removedUser)
-		}
+func newUser(conn net.Conn) *user {
+	newUser := new(user)
+	newUser.conn = conn
+	if conn != nil {
+		newUser.connReader = bufio.NewReader(conn)
 	}
-}
-
-func newUser(conn net.Conn) user {
-	newUser := user{
-		conn:       conn,
-		connReader: bufio.NewReader(conn),
-	}
-	return (newUser)
+	return newUser
 }
 
 func handleNewUser(listener net.Listener, newUserChannel chan *user) {
@@ -64,19 +47,20 @@ func handleNewUser(listener net.Listener, newUserChannel chan *user) {
 		if err != nil {
 			errorMsg("Failed to accept connection: "+err.Error(), 1)
 		}
+
 		newUser := newUser(conn)
 		sendMessageLn(conn, "[SERVER] : Welcome,")
 		sendMessageLn(conn, "[SERVER] : !init:  Initialize account or login")
 		sendMessageLn(conn, "[SERVER] : !help:  See list of possible commands")
 		sendMessageLn(conn, "")
 		fmt.Println("Connection Established")
-		newUserChannel <- &newUser
+		newUserChannel <- newUser
 	}
 }
 
-func handleRemoveUser(removedUser *user) {
-	for _, user := range allUsers {
-		if (*user).conn == (*removedUser).conn {
+func handleRemoveUser(clientManager clientManager, removedUser *user) {
+	for _, user := range *clientManager.allUsers {
+		if user.conn == removedUser.conn {
 			user.status = inactive
 			user.connReader = nil
 			user.conn.Close()
@@ -85,28 +69,28 @@ func handleRemoveUser(removedUser *user) {
 	}
 }
 
-func handleUserRequest(curUser *user, removedUserChannel chan *user) {
+func handleUserRequest(clientManager clientManager, removedUserChannel chan *user) {
 	for {
-		message, err := receiveMessage((*curUser).connReader)
+		message, err := receiveMessage(clientManager.curUser.connReader)
 		if err != nil {
 			switch {
 			case err.Error() != "EOF":
 				fmt.Println("Error receiving message:", err.Error())
 
 			default:
-				removedUserChannel <- curUser
+				removedUserChannel <- clientManager.curUser
 				return
 			}
 		}
-		handled := handleCommand(curUser, message)
+		handled := handleCommand(&clientManager, message)
 		if handled != true {
-			switch (*curUser).status {
+			switch clientManager.curUser.status {
 			case inactive:
-				sendMessageLn((*curUser).conn, "Please initialize")
-				sendMessageLn((*curUser).conn, "!help\tif you feel lost")
+				sendMessageLn(clientManager.curUser.conn, "Please initialize")
+				sendMessageLn(clientManager.curUser.conn, "!help\tif you feel lost")
 
 			case active:
-				sendMessageAllUsers(curUser, message)
+				sendMessageAllUsers(&clientManager, message)
 			}
 		}
 		fmt.Print(message)
