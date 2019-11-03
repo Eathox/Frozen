@@ -5,6 +5,14 @@ import (
 	"net"
 )
 
+const (
+	serverIP       = "10.11.3.2" //Fill in your ip here
+	serverPort     = "4242"
+	serverAdress   = serverIP + ":" + serverPort
+	serverProtocol = "tcp"
+	serverPass     = "host"
+)
+
 func createListener() net.Listener {
 	listener, err := net.Listen(serverProtocol, serverAdress)
 	if err != nil {
