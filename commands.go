@@ -47,10 +47,6 @@ func initUser(curUser *user, words []string) {
 		existingUser.connReader = curUser.connReader
 		*curUser = *existingUser
 
-	case existingUser.password == words[2] && existingUser.status == active:
-		sendMessageLn(curUser.conn, "[SERVER] : Failed to init, User already active")
-		return
-
 	default:
 		sendMessageLn(curUser.conn, "[SERVER] : Failed to init, Username already in use")
 		return
